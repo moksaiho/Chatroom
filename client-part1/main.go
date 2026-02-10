@@ -17,7 +17,7 @@ import (
 
 func main() {
 	host := flag.String("host", "localhost:8080", "Server host:port")
-	workers := flag.Int("workers", 32, "Number of worker threads")
+	workers := flag.Int("workers", 900, "Number of worker threads")
 	totalMessages := flag.Int("messages", 500000, "Total number of messages to send")
 	flag.Parse()
 
@@ -25,8 +25,18 @@ func main() {
 
 	// Warmup Phase
 	fmt.Println("\n--- Starting Warmup Phase ---")
-	runWarmup(*host, 32, 1000)
+	warmupDuration := runWarmup(*host, *workers, 1000)
 	fmt.Println("--- Warmup Complete ---")
+
+	// Little's Law Analysis
+	estimatedRTT := warmupDuration.Seconds() / 1000.0
+	predictedThroughput := float64(*workers) / estimatedRTT
+
+	fmt.Println("\n--- Little's Law Prediction ---")
+	fmt.Printf("Workers (L): %d\n", *workers)
+	fmt.Printf("Estimated RTT (W): %.5f seconds (based on warmup)\n", estimatedRTT)
+	fmt.Printf("Predicted Throughput (lambda = L / W): %.2f msg/sec\n", predictedThroughput)
+	fmt.Println("-------------------------------")
 
 	// Main Phase
 	fmt.Println("\n--- Starting Main Phase ---")
@@ -56,7 +66,7 @@ func main() {
 	fmt.Printf("Wall Time: %.2f seconds\n", duration.Seconds())
 }
 
-func runWarmup(host string, numWorkers int, msgsPerWorker int) {
+func runWarmup(host string, numWorkers int, msgsPerWorker int) time.Duration {
 	var wg sync.WaitGroup
 	start := time.Now()
 
@@ -101,4 +111,5 @@ func runWarmup(host string, numWorkers int, msgsPerWorker int) {
 	wg.Wait()
 	duration := time.Since(start)
 	fmt.Printf("Warmup finished in %.2f seconds\n", duration.Seconds())
+	return duration
 }

@@ -20,11 +20,13 @@ type Collector struct {
 }
 
 type Statistics struct {
-	TotalMessages int
-	SuccessCount  int
-	FailCount     int
-	StartTime     time.Time
-	EndTime       time.Time
+	TotalMessages    int
+	SuccessCount     int
+	FailCount        int
+	TotalConnections int
+	RetryCount       int
+	StartTime        time.Time
+	EndTime          time.Time
 }
 
 func NewCollector() *Collector {
@@ -42,6 +44,16 @@ func (c *Collector) Start() {
 	c.Stats.StartTime = time.Now()
 	go func() {
 		for r := range c.records {
+			// Handle special status codes for connection/retry stats
+			if r.StatusCode == "CONN_NEW" {
+				c.Stats.TotalConnections++
+				continue
+			}
+			if r.StatusCode == "RETRY" {
+				c.Stats.RetryCount++
+				continue
+			}
+
 			c.Stats.TotalMessages++
 			if r.StatusCode == "OK" {
 				c.Stats.SuccessCount++
@@ -52,6 +64,14 @@ func (c *Collector) Start() {
 		c.Stats.EndTime = time.Now()
 		close(c.Done)
 	}()
+}
+
+func (c *Collector) RecordConnection() {
+	c.records <- Record{StatusCode: "CONN_NEW"}
+}
+
+func (c *Collector) RecordRetry() {
+	c.records <- Record{StatusCode: "RETRY"}
 }
 
 func (c *Collector) Close() {
@@ -68,5 +88,7 @@ func (c *Collector) PrintSummary() {
 	fmt.Printf("Successful: %d\n", c.Stats.SuccessCount)
 	fmt.Printf("Failed: %d\n", c.Stats.FailCount)
 	fmt.Printf("Throughput: %.2f msg/sec\n", throughput)
+	fmt.Printf("Total Connections: %d\n", c.Stats.TotalConnections)
+	fmt.Printf("Total Retries: %d\n", c.Stats.RetryCount)
 	fmt.Println("=========================================")
 }

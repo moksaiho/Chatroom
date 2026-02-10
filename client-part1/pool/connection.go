@@ -55,6 +55,7 @@ func (w *Worker) getConnection(roomId string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
+	w.Collector.RecordConnection()
 	w.Conns[roomId] = conn
 	return conn, nil
 }
@@ -81,6 +82,7 @@ func (w *Worker) processMessageWithRetry(msg model.Message) {
 
 		// Failure
 		log.Printf("Worker %d: Failed to send (attempt %d/%d): %v", w.ID, i+1, maxRetries+1, err)
+		w.Collector.RecordRetry()
 		
 		// If connection failed, close and remove it so we reconnect next time
 		if conn, ok := w.Conns[msg.RoomId]; ok {
@@ -111,13 +113,13 @@ func (w *Worker) sendMessage(msg model.Message) error {
 	}
 
 	// Set deadline for write
-	conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	conn.SetWriteDeadline(time.Now().Add(15 * time.Second))
 	if err := conn.WriteJSON(msg); err != nil {
 		return err
 	}
 
 	// Set deadline for read
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(15 * time.Second))
 	
 	// Read response (Echo)
 	// We use RawMessage to avoid full parsing if we don't need it, but we need to check ID/Status ideally.

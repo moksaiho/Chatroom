@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Throughput Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div style="width: 80%; margin: auto;">
+        <canvas id="myChart"></canvas>
+    </div>
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ["20:39:10","20:39:20","20:39:30","20:39:40","20:39:50","20:40:00","20:40:10","20:40:20","20:40:30","20:40:40","20:40:50","20:41:00"],
+                datasets: [{
+                    label: 'Throughput (msg/sec)',
+                    data: [1453,2254,2529,4927,9930,5828,418,2706,5755,5203,8976,14],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

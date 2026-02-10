@@ -40,10 +40,17 @@ if the command gives you the version of go then the go environment is set up
 
 3. pull the code from github and run it on the server
 sudo yum install git -y
+git clone https://github.com/moksaiho/Chatroom.git 
 cd ~/Chatroom/server
 go mod download
 go build -o chatroom-server main.go
 ./chatroom-server
 
 
+
 4. test the running using wscat or curl
+
+5. other userful command
+ sudo systemctl daemon-reload
+ sudo systemctl start chatroom
+ sudo systemctl status chatroom

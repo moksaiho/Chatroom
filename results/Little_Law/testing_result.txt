@@ -1,0 +1,43 @@
+ go run load_testing.go -c 3000 -n 30
+0
+Testing with 3000 concurrent connections...
+2026/02/08 20:28:33 Connection error: unexpected EOF
+
+=== Results ===
+Total Requests: 899700
+Total Time:     42.567488666s
+Avg Latency (W): 103 ms
+Throughput (λ):  21135.85 req/s
+
+=== Little's Law Check ===
+Actual Concurrency (L): 3000
+Calculated L (λ * W):   2176.99
+(base) rivermu@Xihes-MacBook-Air-385 Little_Law % go run load_testing.go -c 1500 -n 300 
+Testing with 1500 concurrent connections...
+
+=== Results ===
+Total Requests: 450000
+Total Time:     22.615283333s
+Avg Latency (W): 59 ms
+Throughput (λ):  19898.05 req/s
+
+=== Little's Law Check ===
+Actual Concurrency (L): 1500
+Calculated L (λ * W):   1173.98
+(base) rivermu@Xihes-MacBook-Air-385 Little_Law % go run load_testing.go -c 1000 -n 30
+0
+Testing with 1000 concurrent connections...
+
+=== Results ===
+Total Requests: 300000
+Total Time:     17.445720542s
+Avg Latency (W): 45 ms
+Throughput (λ):  17196.19 req/s
+
+=== Little's Law Check ===
+Actual Concurrency (L): 1000
+Calculated L (λ * W):   773.83
+
+
+
+as you can see the testing result above, 1000 could be optimal connection to use, and the maximum Throughput is around 20000 requests/second 
