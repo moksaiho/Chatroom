@@ -55,6 +55,7 @@ func (w *Worker) getConnection(roomId string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
+	w.Collector.RecordConnection()
 	w.Conns[roomId] = conn
 	return conn, nil
 }
@@ -81,6 +82,7 @@ func (w *Worker) processMessageWithRetry(msg model.Message) {
 
 		// Failure
 		log.Printf("Worker %d: Failed to send (attempt %d/%d): %v", w.ID, i+1, maxRetries+1, err)
+		w.Collector.RecordRetry()
 		
 		// If connection failed, close and remove it so we reconnect next time
 		if conn, ok := w.Conns[msg.RoomId]; ok {

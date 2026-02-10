@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -25,14 +26,32 @@ func main() {
 
 	// Warmup Phase
 	fmt.Println("\n--- Starting Warmup Phase ---")
-	runWarmup(*host, 32, 1000)
+	warmupDuration := runWarmup(*host, *workers, 1000)
 	fmt.Println("--- Warmup Complete ---")
+
+	// Little's Law Analysis
+	// Estimated RTT = Total Duration / (Workers * MessagesPerWorker) roughly,
+	// or better: RTT approx 0.5ms on local loopback.
+	// We calculate avg RTT from warmup:
+	estimatedRTT := warmupDuration.Seconds() / 1000.0
+	predictedThroughput := float64(*workers) / estimatedRTT
+
+	fmt.Println("\n--- Little's Law Prediction ---")
+	fmt.Printf("Workers (L): %d\n", *workers)
+	fmt.Printf("Estimated RTT (W): %.5f seconds (based on warmup)\n", estimatedRTT)
+	fmt.Printf("Predicted Throughput (lambda = L / W): %.2f msg/sec\n", predictedThroughput)
+	fmt.Println("-------------------------------")
 
 	// Main Phase
 	fmt.Println("\n--- Starting Main Phase ---")
 	
+	// Create results directory
+	if err := os.MkdirAll("results", 0755); err != nil {
+		log.Fatalf("Failed to create results directory: %v", err)
+	}
+
 	// metrics
-	collector, err := metrics.NewCollector("results.csv")
+	collector, err := metrics.NewCollector("results/results.csv")
 	if err != nil {
 		log.Fatalf("Failed to create collector: %v", err)
 	}
@@ -57,9 +76,16 @@ func main() {
 	fmt.Println("--- Main Phase Complete ---")
 	collector.PrintSummary()
 	fmt.Printf("Wall Time: %.2f seconds\n", duration.Seconds())
+
+	// Generate Chart
+	if err := collector.GenerateChart("results/throughput_chart.html"); err != nil {
+		log.Printf("Failed to generate chart: %v", err)
+	} else {
+		fmt.Println("Chart generated: results/throughput_chart.html")
+	}
 }
 
-func runWarmup(host string, numWorkers int, msgsPerWorker int) {
+func runWarmup(host string, numWorkers int, msgsPerWorker int) time.Duration {
 	var wg sync.WaitGroup
 	start := time.Now()
 
@@ -80,8 +106,8 @@ func runWarmup(host string, numWorkers int, msgsPerWorker int) {
 
 			for j := 0; j < msgsPerWorker; j++ {
 				msg := model.Message{
-					UserId:      "warmup",
-					Username:    "warmup",
+					UserId:      "123",
+					Username:    "testuser",
 					Message:     "warmup message",
 					Timestamp:   time.Now(),
 					MessageType: "TEXT",
@@ -105,4 +131,5 @@ func runWarmup(host string, numWorkers int, msgsPerWorker int) {
 	wg.Wait()
 	duration := time.Since(start)
 	fmt.Printf("Warmup finished in %.2f seconds\n", duration.Seconds())
+	return duration
 }
